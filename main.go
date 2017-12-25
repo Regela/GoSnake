@@ -101,10 +101,20 @@ func moveTime(){
 		time.Sleep(time.Second / 3)
 	}
 }
+
+func MoveAddString(w *gc.Window,y int,x int, str string){
+	w.Move(y,x)
+	for i:=range str{
+		w.AddChar(gc.Char(str[i]))
+	}
+}
+
 func deadSnake(){
-
-
+	my,mx:=framescr.MaxYX()
+	MoveAddString(framescr,my/2,mx/2-6,"Game Over")
+	MoveAddString(framescr,my/2+1,mx/2-6,"Goodbye")
 	gamescr.NoutRefresh()
+	framescr.NoutRefresh()
 	gc.Update()
 	time.Sleep(time.Second*2)
 	gc.End()
@@ -113,7 +123,7 @@ func deadSnake(){
 
 func move(){
 	//f:=false
-	oldSnakeHead:=snakeHead
+	//oldSnakeHead:=snakeHead
 	if dir == u {
 		snakeHead.P.Y--
 		snakeHead.Ch='|'
@@ -167,9 +177,9 @@ func move(){
 		//	framescr.NoutRefresh()
 		//	gamescr.MoveAddChar(int(snake[0].Y),int(snake[0].X),'0')
 		//}
-		//deadSnake()
-		snakeHead=oldSnakeHead
-		return
+		deadSnake()
+		//snakeHead=oldSnakeHead
+		//return
 	}
 	if snakeHead.P.Y==feed.Y && snakeHead.P.X==feed.X{
 		FeedGenerate()
@@ -184,11 +194,9 @@ func move(){
 	//}
 	for i:=len(snake)-1; i >0; i--{
 		if snakeHead.P==snake[i-1].P {
-			//gamescr.MoveAddChar(int(snakeHead.P.Y),int(snakeHead.P.X),'X')
-			//gamescr.MoveAddChar(int(snake[0].P.Y),int(snake[0].P.X),'0')
-			//deadSnake()
-			snakeHead=oldSnakeHead
-			return
+			deadSnake()
+			//snakeHead=oldSnakeHead
+			//return
 		}
 		snake[i]=snake[i-1]
 	}

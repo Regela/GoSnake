@@ -1,28 +1,23 @@
 package main
 
-// #define MAX_X 15
-// #define MAX_Y 15
-//
-//
-//
-//
-//
-//
-//
-import "C"
-import (
 
+import (
 	gc "github.com/Regela/goncurses"
 	"github.com/famz/SetLocale"
 	"log"
 	"time"
 	"math/rand"
 	"os"
+	"os/user"
 )
-
+var pause bool
 var rnd *rand.Rand
 var stdscr,gamescr,framescr *gc.Window
 var rows, cols int
+
+var MAX_X uint8
+var MAX_Y uint8
+var Usr *user.User
 const(
 	u = iota
 	d
@@ -44,8 +39,8 @@ type chpoint struct{
 var	feed point
 func FeedGenerate()  {
 genfound:
-	feed.X=uint8(rnd.Intn( C.MAX_X))
-	feed.Y=uint8(rnd.Intn( C.MAX_Y))
+	feed.X=uint8(rnd.Intn( int(MAX_X)))
+	feed.Y=uint8(rnd.Intn( int(MAX_Y)))
 	for i := range snake{
 		if snake[i].P == feed {goto genfound}//Перегениерация, если попало на змейку
 	}
@@ -53,6 +48,10 @@ genfound:
 func ChangeDir(){
 	for {
 		c:=framescr.GetChar()
+		if c == 'p'{
+			pause = ! pause
+			continue
+		}
 		switch c {
 		case 'w':
 			{
@@ -85,10 +84,11 @@ func ChangeDir(){
 
 		case 'q':
 			{
-				gc.End()
-				os.Exit(0)
+				Exit()
 			}
+
 		}
+
 
 	}
 }
@@ -117,13 +117,13 @@ func deadSnake(){
 	framescr.NoutRefresh()
 	gc.Update()
 	time.Sleep(time.Second*2)
-	gc.End()
-	os.Exit(0)
+	Exit()
 }
 
 func move(){
 	//f:=false
 	//oldSnakeHead:=snakeHead
+	if pause {return}
 	if dir == u {
 		snakeHead.P.Y--
 		snakeHead.Ch='|'
@@ -159,7 +159,7 @@ func move(){
 	}
 
 	lastdir=dir
-	if snakeHead.P.Y>=C.MAX_Y || snakeHead.P.X>=C.MAX_X{//Если врезался в стенку
+	if snakeHead.P.Y>=MAX_Y || snakeHead.P.X>=MAX_X{//Если врезался в стенку
 		//if snakeHead.X==255{
 		//	framescr.MoveAddChar(int(snakeHead.Y+1),int(0),'X')
 		//	framescr.NoutRefresh()
@@ -168,12 +168,12 @@ func move(){
 		//	framescr.MoveAddChar(int(0),int(snakeHead.X+1),'X')
 		//	framescr.NoutRefresh()
 		//	gamescr.MoveAddChar(int(snake[0].Y),int(snake[0].X),'0')
-		//}else if snakeHead.X>=C.MAX_X{
-		//	framescr.MoveAddChar(int(snakeHead.Y+1),int(C.MAX_X+1),'X')
+		//}else if snakeHead.X>=MAX_X{
+		//	framescr.MoveAddChar(int(snakeHead.Y+1),int(MAX_X+1),'X')
 		//	framescr.NoutRefresh()
 		//	gamescr.MoveAddChar(int(snake[0].Y),int(snake[0].X),'0')
-		//}else if snakeHead.Y>=C.MAX_Y{
-		//	framescr.MoveAddChar(int(C.MAX_Y+1),int(snakeHead.X+1),'X')
+		//}else if snakeHead.Y>=MAX_Y{
+		//	framescr.MoveAddChar(int(MAX_Y+1),int(snakeHead.X+1),'X')
 		//	framescr.NoutRefresh()
 		//	gamescr.MoveAddChar(int(snake[0].Y),int(snake[0].X),'0')
 		//}
@@ -183,6 +183,7 @@ func move(){
 	}
 	if snakeHead.P.Y==feed.Y && snakeHead.P.X==feed.X{
 		FeedGenerate()
+		CurScoreInc()
 		//f=true
 		snake=append(snake,snake[len(snake)-1])
 	}
@@ -233,13 +234,15 @@ func initPairs()  {
 }
 
 func main(){
+	MAX_X=15
+	MAX_Y=15
 	snake=make([]chpoint,3)
 	for i:=len(snake)-1; i >=0; i-- {
 		snake[i]=snakeHead
 	}
 	dir=r
 	lastdir=dir
-
+	pause=false
 	SetLocale.SetLocale(SetLocale.LC_ALL, "")
 	rnd=rand.New(rand.NewSource(time.Now().UnixNano()))
 	var err error
@@ -254,11 +257,11 @@ func main(){
 	gc.CBreak(true)
 	gc.Cursor( 0)
 	rows, cols = stdscr.MaxYX()
-	if rows < C.MAX_Y+2 || cols < C.MAX_X+2  {
+	if rows < int(MAX_Y+2) || cols < int(MAX_X+2)  {
 		gc.End()
 		log.Fatal("Too small")
 	}
-	framescr, err = gc.NewWindow(C.MAX_Y+2,C.MAX_X*2+2, 0, 0)
+	framescr, err = gc.NewWindow(int(MAX_Y+2),int(MAX_X*2+2), 0, 0)
 	if err != nil {
 
 		gc.End()
@@ -268,8 +271,15 @@ func main(){
 	framescr.MovePrint(1, 0, "")
 	framescr.NoutRefresh()
 	gc.Update()
+	Usr, err = user.Current()
+	if err != nil {
+		log.Fatal( err )
+	}
+
+
+	InitScores()
 	//time.Sleep(time.Second)
-	gamescr, err = gc.NewWindow(C.MAX_Y,C.MAX_X*2, 1, 1)
+	gamescr, err = gc.NewWindow(int(MAX_Y),int(MAX_X*2), 1, 1)
 	if err != nil {
 
 		gc.End()
@@ -287,4 +297,10 @@ func main(){
 	moveTime()
 	gc.End()
 
+}
+
+func Exit()  {
+	gc.End()
+	AddCurScoreAndSave()
+	os.Exit(0)
 }

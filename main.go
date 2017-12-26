@@ -42,7 +42,7 @@ genfound:
 	feed.X=uint8(rnd.Intn( int(MAX_X)))
 	feed.Y=uint8(rnd.Intn( int(MAX_Y)))
 	for i := range snake{
-		if snake[i].P == feed {goto genfound}//Перегениерация, если попало на змейку
+		if snake[i].P == feed || snakeHead.P == feed {goto genfound}//Перегениерация, если попало на змейку
 	}
 }
 func ChangeDir(){
@@ -181,7 +181,7 @@ func move(){
 		//snakeHead=oldSnakeHead
 		//return
 	}
-	if snakeHead.P.Y==feed.Y && snakeHead.P.X==feed.X{
+	if snakeHead.P==feed{
 		FeedGenerate()
 		CurScoreInc()
 		//f=true

@@ -9,6 +9,7 @@ import (
 	"math/rand"
 	"os"
 	"os/user"
+	"strconv"
 )
 var pause bool
 var rnd *rand.Rand
@@ -45,11 +46,33 @@ genfound:
 		if snake[i].P == feed || snakeHead.P == feed {goto genfound}//Перегениерация, если попало на змейку
 	}
 }
+func ReWrite(){
+	gamescr.Clear()
+	gamescr.NoutRefresh()
+	framescr.Clear()
+	framescr.NoutRefresh()
+	framescr.Box(gc.ACS_BOARD, gc.ACS_BOARD)
+	framescr.MovePrint(1, 0, "")
+	framescr.NoutRefresh()
+	scorescr.Clear()
+	scorescr.Box('|','~' )
+	MoveAddString(scorescr,1,1,"CurScr")
+	MoveAddString(scorescr,3,1,"HiScrs")
+	for i:=0 ; i <  10 && i < len(scores); i ++{
+		MoveAddString(scorescr,i+4,1,strconv.FormatInt(int64(scores[len(scores)-1-i]),16))
+	}
+	scorescr.NoutRefresh()
+	stdscr.Clear()
+	gc.Update()
+}
 func ChangeDir(){
 	for {
 		c:=framescr.GetChar()
 		if c == 'p'{
 			pause = ! pause
+			continue
+		}
+		if pause  {
 			continue
 		}
 		switch c {
@@ -61,6 +84,34 @@ func ChangeDir(){
 				break
 			}
 		case 's':
+			{
+				if dir==d{
+					move()
+				}else if lastdir!=u {dir = d}
+				break
+			}
+		case 67:
+			{
+				if dir==r{
+					move()
+				}else if lastdir!=l {dir = r}
+				break
+			}
+		case 68:
+			{
+				if dir==l{
+					move()
+				}else if lastdir!=r {dir = l}
+				break
+			}
+		case 65:
+			{
+				if dir==u{
+					move()
+				}else if lastdir!=d {dir = u}
+				break
+			}
+		case 66:
 			{
 				if dir==d{
 					move()
@@ -86,7 +137,16 @@ func ChangeDir(){
 			{
 				Exit()
 			}
+		case 'c':
+			{
+				ReWrite()
+			}
 
+		//default:
+		//	{
+		//		stdscr.Print(c)
+		//		stdscr.NoutRefresh()
+		//	}
 		}
 
 
